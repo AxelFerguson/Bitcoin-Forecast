@@ -5,6 +5,7 @@ This trigger produces the date, the flow for 365 days prior to that date, the to
 divides the stock by flow the to calculate the stock flow ratio, finally the table divides flow by stock to calculate the supply growth rate.
 This trigger then groups all the variables by the day to ensure that the forecasts can be calculated simply.
 To see a further break down take a look at the select_clean_blockchain file.
+The very last AND requirement in the HAVING statement is to ensure that only complete information is processed.
 */
 
  CREATE TRIGGER add_stock_flow
