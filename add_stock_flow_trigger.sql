@@ -1,5 +1,12 @@
  DROP TRIGGER IF EXISTS add_stock_flow;
- 
+
+/*
+This trigger produces the date, the flow for 365 days prior to that date, the total stock that has ever entered the market,
+divides the stock by flow the to calculate the stock flow ratio, finally the table divides flow by stock to calculate the supply growth rate.
+This trigger then groups all the variables by the day to ensure that the forecasts can be calculated simply.
+To see a further break down take a look at the select_clean_blockchain file.
+*/
+
  CREATE TRIGGER add_stock_flow
   AFTER INSERT 
      ON blockchain
