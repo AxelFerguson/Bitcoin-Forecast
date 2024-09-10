@@ -1,17 +1,19 @@
 WITH
+	
+/*
+This table converts the data from the bitcoin node blockchain data from UNIX-epoch time to the corresponding date.
+It also converts the subsidy to the number of Bitcoin provided to the server that mined the coin originally, which will later be utilized to calculate the flow and supply.
+The height is also selected as another way to order the later tables.
+ */
 time_subsidy AS
 ( 
- SELECT DATE(mediantime, 'unixepoch', 'localtime') AS date, (subsidy/100000000.0) AS reward, height, (mediantime - 31556926) AS date_12
+ SELECT DATE(mediantime, 'unixepoch', 'localtime') AS date, (subsidy/100000000.0) AS reward, height
    FROM blockchain
 ),
 
-annual_r AS
-(
- SELECT SUM(reward) AS annual_reward, STRFTIME('%Y', date) AS year
-   FROM time_subsidy
-  GROUP BY STRFTIME('%Y', date)
-),
-
+/*
+This table aggregates the reward into the total amount of Bitcoin(reward) given for each day.
+*/
 d_reward AS
 (
  SELECT date, SUM(reward) AS daily_reward
@@ -19,6 +21,9 @@ d_reward AS
   GROUP BY date
 ),
 
+/*
+This table calculates the flow of bitcoin into the market for the previous 365 days prior to each row.
+*/
 flow_365_pre AS
 (
 SELECT date, SUM(daily_reward) OVER (
@@ -30,6 +35,9 @@ SELECT date, SUM(daily_reward) OVER (
  GROUP BY date  
 ),
 
+/*
+This table calculates the running total of all Bitcoin that have entered the market, grouped by height.
+*/	
 cumulative_r AS
 (
  SELECT date, reward, height,
@@ -42,6 +50,12 @@ cumulative_r AS
  ORDER BY height
 ),
 
+/* 
+This table combines all the above tables. It selects the date, the flow for 365 days prior to that date,
+the total stock that has ever entered the market, selecting the max(total_supply) because the prior table was grouped by height to ensure no block was missed.
+It then utilizes the stock and divides it by flow to calculate the stock flow ratio, finally the table divides flow by total supply to calculate the supply growth rate.
+This table then groups all the variables by the day to ensure that the forecasts can be calculated simply.
+ */
 stock_flow AS
 (
  SELECT f.date, f.flow AS flow_365_p,
@@ -55,6 +69,10 @@ stock_flow AS
 HAVING f.date NOT IN (SELECT DATE('now'))
 )
 
+/*
+This table selects everything from the previous table, and places it in descending order.
+This simplifies checking that the automatically added entries are being submitted properly.
+*/
 SELECT *
   FROM stock_flow s
  ORDER BY date DESC 
